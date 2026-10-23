@@ -1,0 +1,33 @@
+from .messages import (
+    ActiveTask,
+    AIRequest,
+    AIResult,
+    AnalysisKind,
+    AnalysisRequest,
+    AnalysisResult,
+    Classification,
+    GoalCandidate,
+    MessageSource,
+    TaskAction,
+    TaskCandidate,
+    TaskDeletionCandidate,
+    TranscriptionFailed,
+    TranscriptionRequest,
+)
+
+__all__ = [
+    "AIRequest",
+    "AIResult",
+    "ActiveTask",
+    "AnalysisKind",
+    "AnalysisRequest",
+    "AnalysisResult",
+    "Classification",
+    "GoalCandidate",
+    "MessageSource",
+    "TaskCandidate",
+    "TaskAction",
+    "TaskDeletionCandidate",
+    "TranscriptionRequest",
+    "TranscriptionFailed",
+]

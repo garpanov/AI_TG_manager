@@ -1,0 +1,1 @@
+"""Gemini-backed RabbitMQ workers."""

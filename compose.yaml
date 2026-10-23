@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai_manager
+      POSTGRES_USER: ai_manager
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-development}
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_manager"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ai_manager
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-development}
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    command: ["sh", "-c", "alembic -c services/app/alembic.ini upgrade head && ai-manager-bot"]
+    env_file: .env
+    volumes: [voice-files:/var/lib/ai-manager/voice]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  scheduler:
+    build: .
+    command: ["ai-manager-scheduler"]
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+
+  voice:
+    build:
+      context: .
+      dockerfile: docker/voice/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - voice-files:/var/lib/ai-manager/voice
+      - ${WHISPER_MODEL_PATH:-./models/ggml-small.bin}:/models/ggml-small.bin:ro
+    depends_on:
+      rabbitmq: {condition: service_healthy}
+
+  ai:
+    build: .
+    restart: unless-stopped
+    command: ["ai-manager-ai"]
+    env_file: .env
+    depends_on:
+      rabbitmq: {condition: service_healthy}
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+  voice-files:

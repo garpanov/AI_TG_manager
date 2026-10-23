@@ -1,0 +1,1 @@
+"""whisper.cpp RabbitMQ worker."""
